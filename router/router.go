@@ -39,7 +39,7 @@ func initializeRoutes(r *gin.Engine, service *services.DocsServiceImpl) {
 	tracedGroup.Use(Ginzap(utils.Logger, time.RFC3339, true, true))
 
 	//docs
-	tracedGroup.POST("/docs/bulk", handlers.BulkInsertDocs(*service))
+	tracedGroup.POST("/docs", handlers.InsertDocs(*service))
 
 	// fallback
 	r.NoRoute(handlers.NoRoute)

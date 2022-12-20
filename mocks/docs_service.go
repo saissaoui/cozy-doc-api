@@ -13,8 +13,8 @@ type DocsService struct {
 	mock.Mock
 }
 
-// BulkInsertDocs provides a mock function with given fields: req
-func (_m *DocsService) BulkInsertDocs(req *models.DocumentRequest) error {
+// InsertDocs provides a mock function with given fields: req
+func (_m *DocsService) InsertDocs(req *models.DocumentRequest) error {
 	ret := _m.Called(req)
 
 	var r0 error

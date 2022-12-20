@@ -15,7 +15,7 @@ func FakeDocRequest(database string, docs []json.RawMessage) *models.DocumentReq
 
 func FakeDocs(size int) (docs []json.RawMessage) {
 	docs = make([]json.RawMessage, 10)
-	for index := 0; index < size; index++ {
+	for index := range docs {
 		doc := fmt.Sprintf("{\"docID\":%[1]d,\"docVal\": \"doc_%[1]d\"}", index)
 		bytes, err := json.Marshal(doc)
 		if err != nil {

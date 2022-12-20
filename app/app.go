@@ -27,10 +27,13 @@ func (app *App) setup() {
 	config := utils.LoadConfig()
 
 	// Initialize Services
-	servicesWrapper := services.InitService(config)
+	docsService, err := services.InitService(config)
+	if err != nil {
+		panic("Doc service not initialized, server exiting")
+	}
 
 	// Initialize Router
-	r := router.InitializeRouter(servicesWrapper)
+	r := router.InitializeRouter(docsService)
 
 	app.Config = config
 	app.Router = r

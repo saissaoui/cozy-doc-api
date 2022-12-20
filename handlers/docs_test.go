@@ -49,7 +49,7 @@ func TestHTTPSuite(t *testing.T) {
 	s := new(Suite)
 	suite.Run(t, s)
 }
-func (s Suite) TestBulkInsertDocs_HappyPath() {
+func (s Suite) TestInsertDocs_HappyPath() {
 	docsService := new(mocks.DocsService)
 	s.service = docsService
 	req := utils.FakeDocRequest("test", utils.FakeDocs(10))
@@ -59,8 +59,8 @@ func (s Suite) TestBulkInsertDocs_HappyPath() {
 	s.Require().NoError(err)
 	s.ctx.Request.Header.Add("content-type", "application/json")
 
-	docsService.On("BulkInsertDocs", req).Return(nil)
-	BulkInsertDocs(s.service)(s.ctx)
+	docsService.On("InsertDocs", req).Return(nil)
+	InsertDocs(s.service)(s.ctx)
 	s.Assert().Equal(http.StatusOK, s.w.Code)
 }
 
@@ -73,7 +73,7 @@ func (s *Suite) TestGetFizzBuzz_Invalid() {
 			s.ctx.Request, err = http.NewRequest("POST", fake.DomainName(), bytes.NewBuffer(b))
 			require.NoError(t, err)
 			s.ctx.Request.Header.Add("content-type", "application/json")
-			BulkInsertDocs(svc)(s.ctx)
+			InsertDocs(svc)(s.ctx)
 			assert.Equal(t, http.StatusBadRequest, s.w.Code)
 			mock.AssertExpectationsForObjects(t, svc)
 		})
@@ -98,9 +98,9 @@ func (s *Suite) TestGetFizzBuzz_Internal() {
 	s.Require().NoError(err)
 	s.ctx.Request.Header.Add("content-type", "application/json")
 
-	docsService.On("BulkInsertDocs", mock.Anything).Return(errors.New("internal"))
+	docsService.On("InsertDocs", mock.Anything).Return(errors.New("internal"))
 
-	BulkInsertDocs(s.service)(s.ctx)
+	InsertDocs(s.service)(s.ctx)
 	s.Assert().Equal(http.StatusInternalServerError, s.w.Code)
 	mock.AssertExpectationsForObjects(s.T(), docsService)
 }

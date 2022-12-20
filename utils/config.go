@@ -1,30 +1,27 @@
 package utils
 
 import (
-	"fmt"
-
 	"github.com/spf13/viper"
 )
 
-var errors []error
-
 type AppConfig struct {
-	Port        int
-	Environment string
+	Port            int
+	Environment     string
+	CouchDbHost     string
+	CouchDbPort     int
+	CouchDbUser     string
+	CouchDbPassword string
 }
 
 func LoadConfig() AppConfig {
 	viper.AutomaticEnv()
 	cfg := AppConfig{
-		Port:        getIntWithDefault("PORT", 8088),
-		Environment: getStringWithDefault("ENVIRONMENT", "development"),
-	}
-	if len(errors) != 0 {
-		errorReport := "errors in config :\n"
-		for _, err := range errors {
-			errorReport += fmt.Sprintf("- %s\n", err)
-		}
-		panic(fmt.Errorf(errorReport))
+		Port:            getIntWithDefault("PORT", 8088),
+		Environment:     getStringWithDefault("ENVIRONMENT", "development"),
+		CouchDbHost:     getStringWithDefault("DB_HOST", "http://localhost"),
+		CouchDbPort:     getIntWithDefault("DB_PORT", 5984),
+		CouchDbUser:     getStringWithDefault("DB_USER", "user"),
+		CouchDbPassword: getStringWithDefault("DB_PASSWORD", "password"),
 	}
 
 	return cfg

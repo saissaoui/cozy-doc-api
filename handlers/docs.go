@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func BulkInsertDocs(s services.DocsService) gin.HandlerFunc {
+func InsertDocs(s services.DocsService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		req := new(models.DocumentRequest)
 		err := ctx.Bind(req)
@@ -25,7 +25,7 @@ func BulkInsertDocs(s services.DocsService) gin.HandlerFunc {
 				gin.H{"error": err.Error()})
 			return
 		}
-		err = s.BulkInsertDocs(req)
+		err = s.InsertDocs(req)
 
 		if err != nil {
 			ctx.JSON(
