@@ -64,7 +64,7 @@ func (s Suite) TestInsertDocs_HappyPath() {
 	s.Assert().Equal(http.StatusOK, s.w.Code)
 }
 
-func (s *Suite) TestGetFizzBuzz_Invalid() {
+func (s *Suite) TestInsertDocs_Invalid() {
 	invalidErrTest := func(tt *testing.T, name string, body interface{}, svc services.DocsService) {
 		tt.Run(name, func(t *testing.T) {
 			s.fakeContext()
@@ -87,7 +87,7 @@ func (s *Suite) TestGetFizzBuzz_Invalid() {
 
 }
 
-func (s *Suite) TestGetFizzBuzz_Internal() {
+func (s *Suite) TestInsertDocs_Internal() {
 	docsService := new(mocks.DocsService)
 	s.service = docsService
 

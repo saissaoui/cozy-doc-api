@@ -7,8 +7,8 @@ import (
 )
 
 type DocumentRequest struct {
-	Database  string            `json:"database" valid:"required"`
-	Documents []json.RawMessage `json:"docs" valid:"required"`
+	Database  string             `json:"database" valid:"required"`
+	Documents []*json.RawMessage `json:"docs" valid:"required"`
 }
 
 func (req DocumentRequest) Validate() error {
