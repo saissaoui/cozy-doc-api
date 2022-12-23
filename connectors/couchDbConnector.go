@@ -154,7 +154,7 @@ func (c CouchDbClientImpl) BulkInsertDocuments(docsWrapper models.BulkDocsWrappe
 	}
 	request.Header.Add("accept", "application/json")
 	request.Header.Add("Content-Type", "application/json")
-	//request.Header.Add("Authorization", "Basic "+c.basicAuthToken)
+	request.Header.Add("Authorization", "Basic "+c.basicAuthToken)
 
 	httpResponse, err := c.httpClient.Do(request)
 	if err != nil {
