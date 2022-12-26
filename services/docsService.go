@@ -12,14 +12,9 @@ import (
 )
 
 const (
-	batchSize              = 100
+	batchSize              = 30
 	maxParalellBulkProcess = 8
 )
-
-var wrappersChan = make(chan models.BulkDocsWrapper, 8)
-var resultsChan = make(chan int)
-var errChan = make(chan error)
-var done = make(chan bool)
 
 //go:generate mockery --name=DocsService --output ./../mocks --case=underscore
 type DocsService interface {
@@ -36,16 +31,16 @@ func InitService(config utils.AppConfig) (*DocsServiceImpl, error) {
 		return nil, errors.Wrap(err, "Unable to create database connector")
 	}
 
-	if client != nil {
-		client.Ping()
+	err = client.Ping()
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to ping database ")
 	}
-
 	return &DocsServiceImpl{
 		CouchDbClient: client,
 	}, nil
 }
 
-func worker(wg *sync.WaitGroup, database string, service DocsServiceImpl) {
+func worker(wg *sync.WaitGroup, database string, service DocsServiceImpl, wrappersChan chan models.BulkDocsWrapper, errChan chan error, resultsChan chan int) {
 	for w := range wrappersChan {
 		err := service.CouchDbClient.BulkInsertDocuments(w, database)
 		if err != nil {
@@ -57,17 +52,17 @@ func worker(wg *sync.WaitGroup, database string, service DocsServiceImpl) {
 	wg.Done()
 }
 
-func (service DocsServiceImpl) createWorkerPool(database string) {
+func (service DocsServiceImpl) createWorkerPool(database string, wrappersChan chan models.BulkDocsWrapper, errChan chan error, resultsChan chan int) {
 	var wg sync.WaitGroup
 	for i := 0; i < maxParalellBulkProcess; i++ {
 		wg.Add(1)
-		go worker(&wg, database, service)
+		go worker(&wg, database, service, wrappersChan, errChan, resultsChan)
 	}
 	wg.Wait()
 	close(resultsChan)
 }
 
-func logResults(done chan bool) {
+func logResults(done chan bool, resultsChan chan int) {
 	total := 0
 	for result := range resultsChan {
 		total += result
@@ -76,7 +71,7 @@ func logResults(done chan bool) {
 	done <- true
 }
 
-func logErrors() {
+func logErrors(errChan chan error) {
 	for err := range errChan {
 		utils.Logger.Error("error from workers", zap.Error(err))
 	}
@@ -84,6 +79,11 @@ func logErrors() {
 
 // InsertDocs creates a database if it does'nt exist and inserts an array of docs
 func (service DocsServiceImpl) InsertDocs(req *models.DocumentRequest) error {
+
+	var wrappersChan = make(chan models.BulkDocsWrapper, 8)
+	var resultsChan = make(chan int)
+	var errChan = make(chan error)
+	var done = make(chan bool)
 
 	err := service.CouchDbClient.CreateDatabase(req.Database)
 	if err != nil {
@@ -95,16 +95,16 @@ func (service DocsServiceImpl) InsertDocs(req *models.DocumentRequest) error {
 			return err
 		}
 	} else {
-		go bulkInsertParallelized(req)
-		go logResults(done)
-		go logErrors()
-		service.createWorkerPool(req.Database)
+		go bulkInsertParallelized(req, wrappersChan)
+		go logResults(done, resultsChan)
+		go logErrors(errChan)
+		service.createWorkerPool(req.Database, wrappersChan, errChan, resultsChan)
 		<-done
 	}
 
 	return nil
 }
-func bulkInsertParallelized(req *models.DocumentRequest) {
+func bulkInsertParallelized(req *models.DocumentRequest, wrappersChan chan models.BulkDocsWrapper) {
 	docsToInsert := make([]*json.RawMessage, 0)
 	for _, doc := range req.Documents {
 		docsToInsert = append(docsToInsert, doc)
