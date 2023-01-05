@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"bytes"
+	"cozy-doc-api/models"
 	"cozy-doc-api/utils"
 	"encoding/base64"
 	"encoding/json"
@@ -19,17 +20,12 @@ type CouchDbClient interface {
 	Ping() error
 	CreateDatabase(name string) error
 	InsertDocument(doc json.RawMessage, database string) error
+	BulkInsertDocuments(docsWrapper models.BulkDocsWrapper, database string) error
 }
 type CouchDbClientImpl struct {
 	httpClient     *http.Client
 	basicAuthToken string
 	url            string
-}
-
-type CouchHttpReponseBody struct {
-	Ok     bool   `json:"ok"`
-	Error  string `json:"error"`
-	Reason string `json:"reason"`
 }
 
 // NewClient initialises a new couch db client
@@ -109,7 +105,7 @@ func (c CouchDbClientImpl) CreateDatabase(name string) error {
 		utils.Logger.Warn("Database already exists", zap.String("database", "name"))
 		return nil
 	default:
-		resp := new(CouchHttpReponseBody)
+		resp := new(models.CouchHttpReponseBody)
 		var errorCause string
 		body, err := ioutil.ReadAll(httpResponse.Body)
 		if err != nil {
@@ -143,6 +139,31 @@ func (c CouchDbClientImpl) InsertDocument(doc json.RawMessage, database string) 
 
 	if httpResponse.StatusCode != 201 && httpResponse.StatusCode != 202 {
 		return fmt.Errorf("insert document went wrong with status : %d", httpResponse.StatusCode)
+	}
+	return nil
+}
+
+func (c CouchDbClientImpl) BulkInsertDocuments(docsWrapper models.BulkDocsWrapper, database string) error {
+	b, err := json.Marshal(docsWrapper)
+	if err != nil {
+		return errors.Wrap(err, "unable to marshal docs wrapper")
+	}
+	request, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/_bulk_docs", c.url, database), bytes.NewReader(b))
+	if err != nil {
+		return errors.Wrap(err, "Unable to create bulk insert documents request")
+	}
+	request.Header.Add("accept", "application/json")
+	request.Header.Add("Content-Type", "application/json")
+	request.Header.Add("Authorization", "Basic "+c.basicAuthToken)
+
+	httpResponse, err := c.httpClient.Do(request)
+	if err != nil {
+		return errors.Wrap(err, "Unable to bulk insert documents")
+
+	}
+
+	if httpResponse.StatusCode != 201 && httpResponse.StatusCode != 202 {
+		return fmt.Errorf("bulk insert documents went wrong with status : %d", httpResponse.StatusCode)
 	}
 	return nil
 }
